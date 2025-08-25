@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Pong with AI</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.min.js"></script>
+</head>
+<body>
+<script>
+let ballX, ballY, ballSpeedX, ballSpeedY;
+let playerPaddleY, aiPaddleY;
+let paddleHeight = 100, paddleWidth = 10;
+let ballSize = 10;
+let playerScore = 0, aiScore = 0;
+let canvasWidth = 800, canvasHeight = 600;
+let gameOver = false;
+let winner = "";
+
+function setup() {
+  createCanvas(canvasWidth, canvasHeight);
+  resetBall();
+  playerPaddleY = canvasHeight / 2 - paddleHeight / 2;
+  aiPaddleY = canvasHeight / 2 - paddleHeight / 2;
+}
+
+function draw() {
+  background(0);
+  // Draw paddles and ball
+  fill(255);
+  rect(20, playerPaddleY, paddleWidth, paddleHeight);
+  rect(canvasWidth - 30, aiPaddleY, paddleWidth, paddleHeight);
+  if (!gameOver) {
+    ellipse(ballX, ballY, ballSize);
+  }
+  // Draw scores
+  textSize(32);
+  textAlign(LEFT);
+  text(playerScore, 100, 50);
+  textAlign(RIGHT);
+  text(aiScore, canvasWidth - 100, 50);
+  // Display win message
+  if (gameOver) {
+    textSize(48);
+    textAlign(CENTER);
+    text(winner + " Wins!", canvasWidth / 2, canvasHeight / 2);
+    return;
+  }
+  // Move player paddle with mouse
+  playerPaddleY = constrain(mouseY - paddleHeight / 2, 0, canvasHeight - paddleHeight);
+  // AI paddle movement
+  let targetY = predictBallY();
+  // 20% chance for AI to miss by not moving
+  if (random() > 0.2) {
+    aiPaddleY = lerp(aiPaddleY, targetY - paddleHeight / 2, 0.1);
+  }
+  aiPaddleY = constrain(aiPaddleY, 0, canvasHeight - paddleHeight);
+  // Move ball
+  ballX += ballSpeedX;
+  ballY += ballSpeedY;
+  // Ball collision with top and bottom
+  if (ballY - ballSize / 2 < 0 || ballY + ballSize / 2 > canvasHeight) {
+    ballSpeedY *= -1;
+    ballY = ballY - ballSize / 2 < 0 ? ballSize / 2 : canvasHeight - ballSize / 2;
+  }
+  // Ball collision with paddles
+  if (ballX - ballSize / 2 < 30 && ballX - ballSize / 2 > 20 && ballY > playerPaddleY && ballY < playerPaddleY + paddleHeight) {
+    ballSpeedX = abs(ballSpeedX);
+    ballSpeedY += (ballY - (playerPaddleY + paddleHeight / 2)) * 0.1;
+    ballX = 30 + ballSize / 2; // Prevent sticking
+  }
+  if (ballX + ballSize / 2 > canvasWidth - 30 && ballX + ballSize / 2 < canvasWidth - 20 && ballY > aiPaddleY && ballY < aiPaddleY + paddleHeight) {
+    ballSpeedX = -abs(ballSpeedX);
+    ballSpeedY += (ballY - (aiPaddleY + paddleHeight / 2)) * 0.1;
+    ballX = canvasWidth - 30 - ballSize / 2; // Prevent sticking
+  }
+  // Score and reset ball
+  if (ballX < 0) {
+    aiScore++;
+    if (aiScore >= 3) {
+      gameOver = true;
+      winner = "AI";
+    } else {
+      resetBall();
+    }
+  }
+  if (ballX > canvasWidth) {
+    playerScore++;
+    if (playerScore >= 3) {
+      gameOver = true;
+      winner = "Player";
+    } else {
+      resetBall();
+    }
+  }
+}
+
+function predictBallY() {
+  let x = ballX;
+  let y = ballY;
+  let vx = ballSpeedX;
+  let vy = ballSpeedY;
+  while (x < canvasWidth - 30 && x > 30) { // Stop simulation at paddles
+    x += vx;
+    y += vy;
+    if (y - ballSize / 2 < 0 || y + ballSize / 2 > canvasHeight) {
+      vy *= -1;
+      y = y - ballSize / 2 < 0 ? ballSize / 2 : canvasHeight - ballSize / 2;
+    }
+  }
+  return y;
+}
+
+function resetBall() {
+  ballX = canvasWidth / 2;
+  ballY = canvasHeight / 2;
+  ballSpeedX = random(4, 6) * (random() > 0.5 ? 1 : -1);
+  ballSpeedY = random(-3, 3);
+}
+</script>
+</body>
+</html>
